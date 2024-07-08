@@ -2,60 +2,101 @@ version: "3"
 
 services:
 
-  mysql:
-    container_name: reference_mysql
-    image: mysql:8.2.0
-    volumes:
-      - ${MYSQL_VOLUME}:/var/lib/mysql
+  zookeeper:
     build:
         context: ./
-        dockerfile: mysql.Dockerfile
+        dockerfile: zookeeper.Dockerfile
     ports:
-      - ${MYSQL_PORT}:3306
-    environment:
-        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-        MYSQL_DATABASE: ${MYSQL_DATABASE}
-        MYSQL_USER: ${MYSQL_USER}
-        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-
-    restart: always
-
+      - ${ZOOKEEPER_PORT}:2181
     networks:
       - reference_network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "100m"
-        max-file: "10"
+    environment:
+        ZOOKEEPER_SERVER_ID: 1
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+        ZOOKEEPER_INIT_LIMIT: 5
+        ZOOKEEPER_SYNC_LIMIT: 2
+        ZOOKEEPER_SERVERS: server.1=zookeeper:2888:3888
+        LOG_DIR: /var/lib/zookeeper/logs
+    volumes:
+        - ${ZOOKEEPER_LOG_VOLUME}:/var/lib/zookeeper/logs
 
-
-
-  rabbitmq:
-    container_name: reference_rabbitmq
+  kafka:
+    depends_on:
+      - zookeeper
     build:
         context: ./
-        dockerfile: rabbitmq.Dockerfile
+        dockerfile: kafka.Dockerfile
     ports:
-      - ${RABBITMQ_PORT}:5672
-      - ${RABBITMQ_MANAGEMENT_PORT}:15672
+      - ${KAFKA_PORT}:9092
+      - ${KAFKA_HOST_PORT}:29092
     networks:
       - reference_network
-
-    volumes:
-      - ${RABBITMQ_DATA_VOLUME}:/var/lib/rabbitmq
-      - ${RABBITMQ_LOG_VOLUME}:/var/log/rabbitmq
-
     environment:
-        RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-        RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+        KAFKA_BROKER_ID: 1
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT # ok
+        KAFKA_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092 # ok
+        KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "100m"
-        max-file: "10"
-    restart: always
 
 networks:
-    reference_network:
-        driver: bridge
+  reference_network:
+    driver: bridge
+
+
+#  mysql:
+#    container_name: reference_mysql
+#    image: mysql:8.2.0
+#    volumes:
+#      - ${MYSQL_VOLUME}:/var/lib/mysql
+#    build:
+#        context: ./
+#        dockerfile: mysql.Dockerfile
+#    ports:
+#      - ${MYSQL_PORT}:3306
+#    environment:
+#        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#        MYSQL_DATABASE: ${MYSQL_DATABASE}
+#        MYSQL_USER: ${MYSQL_USER}
+#        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+#    restart: always
+#    networks:
+#      - reference_network
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-size: "100m"
+#        max-file: "10"
+#
+#
+#
+#  rabbitmq:
+#    container_name: reference_rabbitmq
+#    build:
+#        context: ./
+#        dockerfile: rabbitmq.Dockerfile
+#    ports:
+#      - ${RABBITMQ_PORT}:5672
+#      - ${RABBITMQ_MANAGEMENT_PORT}:15672
+#    networks:
+#      - reference_network
+#    volumes:
+#      - ${RABBITMQ_DATA_VOLUME}:/var/lib/rabbitmq
+#      - ${RABBITMQ_LOG_VOLUME}:/var/log/rabbitmq
+#    environment:
+#        RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+#        RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-size: "100m"
+#        max-file: "10"
+#    restart: always
+
+
