@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  rabbitmq:
+    container_name: reference_rabbitmq
+    build:
+        context: ./
+        dockerfile: rabbitmq.Dockerfile
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - reference_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+networks:
+    reference_network:
+        driver: bridge
