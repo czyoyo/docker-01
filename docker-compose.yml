@@ -10,7 +10,7 @@ services:
       - reference_network
     environment:
         ZOOKEEPER_SERVER_ID: 1
-        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_CLIENT_PORT: 2181 # 기본 주키퍼 포트인 2181로 지정
         ZOOKEEPER_TICK_TIME: 2000
         ZOOKEEPER_INIT_LIMIT: 5
         ZOOKEEPER_SYNC_LIMIT: 2
@@ -38,14 +38,15 @@ services:
     environment:
         KAFKA_BROKER_ID: 1
         KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT # ok
-        KAFKA_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092 # ok
+        KAFKA_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://0.0.0.0:29092 # 브로커가 듣는 주소
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092 # 클라이언트가 접속하는 주소
         KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181 # 주키퍼 2181 포트로 연결
         KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
         KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ${KAFKA_LOG_VOLUME}:/var/lib/kafka/logs
     logging:
         driver: "json-file"
         options:
